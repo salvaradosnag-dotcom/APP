@@ -1425,6 +1425,7 @@ El Hórreo · Adm. Franquicias`;
 
 function buildMailKPI(reg, marcaNombre) {
   const asunto = `[El Hórreo] KPI ${marcaNombre} — ${reg.local} — ${reg.fecha}`;
+  const kdsEstacion = reg.kds_general || reg.kds_fritos || reg.kds_salsera;
   const cuerpo =
 `REGISTRO KPI
 ============
@@ -1435,8 +1436,9 @@ Usuario: ${reg.usuario || "-"}
 
 TIEMPOS KDS
 -----------
-Desayuno : ${reg.kds_desayuno || "-"} min   Almuerzo: ${reg.kds_almuerzo || "-"} min
-Tarde    : ${reg.kds_tarde || "-"} min       Noche: ${reg.kds_noche || "-"} min
+${kdsEstacion
+  ? `General  : ${reg.kds_general || "-"} min   Fritos: ${reg.kds_fritos || "-"} min   Salsera: ${reg.kds_salsera || "-"} min`
+  : `Desayuno : ${reg.kds_desayuno || "-"} min   Almuerzo: ${reg.kds_almuerzo || "-"} min\nTarde    : ${reg.kds_tarde || "-"} min       Noche: ${reg.kds_noche || "-"} min`}
 Promedio : ${reg.kds_prom || "-"} min
 
 DELIVERY
@@ -1933,7 +1935,7 @@ function FormVentas({ ventas, setVentas, metasDiarias, metas, syncLog, setSyncLo
 function FormKPI({ kpis, setKpis, syncLog, setSyncLog, marca, config }) {
   const m = MARCAS[marca] || MARCAS[Object.keys(MARCAS)[0]] || { color: "#6C63FF", bg: "#F0EEFF", emoji: "🌭", textColor: "#fff", nombre: "—" };
   const localesMarca = LOCALES_POR_MARCA[marca] || LOCALES;
-  const [form, setForm] = useState({ fecha: today(), local: localesMarca[0], usuario: "", kds_desayuno: "", kds_almuerzo: "", kds_tarde: "", kds_noche: "", nota_uber: "", nota_pya: "", pedidos_uber: "", pedidos_pya: "", nps_promotores: "", nps_pasivos: "", nps_detractores: "", obs: "" });
+  const [form, setForm] = useState({ fecha: today(), local: localesMarca[0], usuario: "", kds_desayuno: "", kds_almuerzo: "", kds_tarde: "", kds_noche: "", kds_general: "", kds_fritos: "", kds_salsera: "", nota_uber: "", nota_pya: "", pedidos_uber: "", pedidos_pya: "", nps_promotores: "", nps_pasivos: "", nps_detractores: "", obs: "" });
   const [saved, setSaved] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [syncErr, setSyncErr] = useState(false);
@@ -1941,7 +1943,11 @@ function FormKPI({ kpis, setKpis, syncLog, setSyncLog, marca, config }) {
 
   useEffect(() => { setForm(f => ({ ...f, local: (LOCALES_POR_MARCA[marca] || LOCALES)[0] })); }, [marca]);
 
-  const kdsVals  = [form.kds_desayuno, form.kds_almuerzo, form.kds_tarde, form.kds_noche].map(Number).filter(n => n > 0);
+  const kdsMode = ["doggis","juanmaestro"].includes(marca) ? "estacion" : "daypart";
+
+  const kdsVals  = kdsMode === "estacion"
+    ? [form.kds_general, form.kds_fritos, form.kds_salsera].map(Number).filter(n => n > 0)
+    : [form.kds_desayuno, form.kds_almuerzo, form.kds_tarde, form.kds_noche].map(Number).filter(n => n > 0);
   const kdsProm  = kdsVals.length ? (kdsVals.reduce((a, b) => a + b, 0) / kdsVals.length).toFixed(1) : 0;
   const totalPed = (parseFloat(form.pedidos_uber) || 0) + (parseFloat(form.pedidos_pya) || 0);
   const totalNPS = (parseFloat(form.nps_promotores) || 0) + (parseFloat(form.nps_pasivos) || 0) + (parseFloat(form.nps_detractores) || 0);
@@ -1976,7 +1982,7 @@ function FormKPI({ kpis, setKpis, syncLog, setSyncLog, marca, config }) {
       else setSyncErr(true);
     }
     setTimeout(() => { setSaved(false); setSyncErr(false); }, 3000);
-    setForm(f => ({ ...f, kds_desayuno: "", kds_almuerzo: "", kds_tarde: "", kds_noche: "", nota_uber: "", nota_pya: "", pedidos_uber: "", pedidos_pya: "", nps_promotores: "", nps_pasivos: "", nps_detractores: "", obs: "" }));
+    setForm(f => ({ ...f, kds_desayuno: "", kds_almuerzo: "", kds_tarde: "", kds_noche: "", kds_general: "", kds_fritos: "", kds_salsera: "", nota_uber: "", nota_pya: "", pedidos_uber: "", pedidos_pya: "", nps_promotores: "", nps_pasivos: "", nps_detractores: "", obs: "" }));
   };
 
   const g2 = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 };
@@ -1988,6 +1994,9 @@ function FormKPI({ kpis, setKpis, syncLog, setSyncLog, marca, config }) {
         <Card style={{ marginBottom: 14, border: `2px solid ${m.color}22`, background: m.bg }}>
           <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
             {kdsProm > 0 && <div><div style={{ fontSize: 10, color: "#94A3B8" }}>KDS Promedio</div><div style={{ fontSize: 22, fontFamily: "Nunito", fontWeight: 900, color: "#06B6D4" }}>{kdsProm} min</div></div>}
+            {kdsMode === "estacion" && form.kds_general > 0 && <div><div style={{ fontSize: 10, color: "#94A3B8" }}>General</div><div style={{ fontSize: 18, fontFamily: "Nunito", fontWeight: 900, color: "#06B6D4" }}>{form.kds_general}m</div></div>}
+            {kdsMode === "estacion" && form.kds_fritos > 0 && <div><div style={{ fontSize: 10, color: "#94A3B8" }}>Fritos</div><div style={{ fontSize: 18, fontFamily: "Nunito", fontWeight: 900, color: "#F59E0B" }}>{form.kds_fritos}m</div></div>}
+            {kdsMode === "estacion" && form.kds_salsera > 0 && <div><div style={{ fontSize: 10, color: "#94A3B8" }}>Salsera</div><div style={{ fontSize: 18, fontFamily: "Nunito", fontWeight: 900, color: "#22C55E" }}>{form.kds_salsera}m</div></div>}
             {totalPed > 0 && <div><div style={{ fontSize: 10, color: "#94A3B8" }}>Total Pedidos</div><div style={{ fontSize: 22, fontFamily: "Nunito", fontWeight: 900, color: "#6C63FF" }}>{totalPed}</div></div>}
             {totalNPS > 0 && <div><div style={{ fontSize: 10, color: "#94A3B8" }}>NPS Score hoy</div><div style={{ fontSize: 22, fontFamily: "Nunito", fontWeight: 900, color: npsScore >= 50 ? "#22C55E" : "#F59E0B" }}>{npsScore}</div></div>}
             {npsAcumMes && <div style={{ borderLeft: "1.5px solid #E2E8F0", paddingLeft: 20 }}>
@@ -2004,12 +2013,20 @@ function FormKPI({ kpis, setKpis, syncLog, setSyncLog, marca, config }) {
           <Field label="Usuario" col={2}><input placeholder="Nombre" value={form.usuario} onChange={e => set("usuario", e.target.value)} /></Field>
         </div>
         <Divider label="⏱️ KDS — Tiempos (min)" color="#06B6D4" />
-        <div style={{ ...g2, marginBottom: 12 }}>
-          <Field label="Desayuno"><input type="number" placeholder="0" value={form.kds_desayuno} onChange={e => set("kds_desayuno", e.target.value)} /></Field>
-          <Field label="Almuerzo"><input type="number" placeholder="0" value={form.kds_almuerzo} onChange={e => set("kds_almuerzo", e.target.value)} /></Field>
-          <Field label="Tarde"><input type="number" placeholder="0" value={form.kds_tarde} onChange={e => set("kds_tarde", e.target.value)} /></Field>
-          <Field label="Noche"><input type="number" placeholder="0" value={form.kds_noche} onChange={e => set("kds_noche", e.target.value)} /></Field>
-        </div>
+        {kdsMode === "estacion" ? (
+          <div style={{ ...g2, marginBottom: 12 }}>
+            <Field label="🍳 KDS General"><input type="number" placeholder="0" value={form.kds_general} onChange={e => set("kds_general", e.target.value)} /></Field>
+            <Field label="🍟 KDS Fritos"><input type="number" placeholder="0" value={form.kds_fritos} onChange={e => set("kds_fritos", e.target.value)} /></Field>
+            <Field label="🥫 KDS Salsera" col={2}><input type="number" placeholder="0" value={form.kds_salsera} onChange={e => set("kds_salsera", e.target.value)} /></Field>
+          </div>
+        ) : (
+          <div style={{ ...g2, marginBottom: 12 }}>
+            <Field label="Desayuno"><input type="number" placeholder="0" value={form.kds_desayuno} onChange={e => set("kds_desayuno", e.target.value)} /></Field>
+            <Field label="Almuerzo"><input type="number" placeholder="0" value={form.kds_almuerzo} onChange={e => set("kds_almuerzo", e.target.value)} /></Field>
+            <Field label="Tarde"><input type="number" placeholder="0" value={form.kds_tarde} onChange={e => set("kds_tarde", e.target.value)} /></Field>
+            <Field label="Noche"><input type="number" placeholder="0" value={form.kds_noche} onChange={e => set("kds_noche", e.target.value)} /></Field>
+          </div>
+        )}
         <Divider label="🚀 Delivery" color="#6C63FF" />
         <div style={{ ...g2, marginBottom: 12 }}>
           <Field label="Nota Uber (/5)"><input type="number" step=".1" min="1" max="5" placeholder="5.0" value={form.nota_uber} onChange={e => set("nota_uber", e.target.value)} /></Field>
