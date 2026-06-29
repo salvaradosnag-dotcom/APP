@@ -45,12 +45,15 @@ function corto(nombre) {
   return NOMBRES_CORTOS[nombre] || nombre.split(" - ").slice(1).join(" - ") || nombre;
 }
 
-function today(tz = "America/Punta_Arenas") {
-  return new Date().toLocaleDateString("sv-SE", { timeZone: tz });
+// Punta Arenas = UTC-3 fijo (no tiene DST desde 2016)
+function today() {
+  const d = new Date(Date.now() - 3 * 60 * 60 * 1000);
+  return d.toISOString().slice(0, 10);
 }
 
-function horaLocal(tz = "America/Punta_Arenas") {
-  return parseInt(new Date().toLocaleTimeString("es-CL", { timeZone: tz, hour: "2-digit", hour12: false }));
+function horaLocal() {
+  const d = new Date(Date.now() - 3 * 60 * 60 * 1000);
+  return d.getUTCHours();
 }
 
 // ── Dedup en KV (evita reenviar la misma alerta) ─────────────────────────────
